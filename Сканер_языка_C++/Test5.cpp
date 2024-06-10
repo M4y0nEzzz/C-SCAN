@@ -1,12 +1,14 @@
-jksfdjfkls
-dsa'[frsd
-f\sdfsd
-fsdg
-sdfg'\sda
-fdas'\;'\sda;\'fasf
-gksdfl;a]
-faf
-fdsfsfsf
-fsfsfs
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-u111
+#include <iostream>
+#include <vector>
+/*
+Comment
+*/
+using namespace std;
+
+int main(){
+    int n = 10;
+    vector <int> v(n, 0);
+    for(i: v){
+        cout << i;
+    }
+}

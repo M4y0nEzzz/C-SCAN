@@ -1,6 +1,14 @@
-from string import digits
+non_digits = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-with open('output.txt', 'r', encoding='utf-8') as file:
-    letter = file.read()
-    letter = letter + '#'
-letter_or_digit = letter + digits
+digits = '0123456789'
+non_zero_digits = '123456789'
+octal_digits = '01234567'
+hexadecimal_digits = '0123456789abcdefABCDEF'
+
+unsigned_suffix = 'uU'
+float_suffix = 'lLfF'
+integer_suffix = 'uUlL'
+exponent_part = 'eE'
+
+sign = '+-'
+

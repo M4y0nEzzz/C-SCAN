@@ -1,34 +1,46 @@
 #include <iostream>
-#include <vector>
-#include <queue>
 
 using namespace std;
 
-int main()
-{
-    int n;
-    cin >> n;
-    vector<vector<int> > gr(n, vector<int>(n, 0));
-    for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
-            cin >> gr[i][j];
-        }
+int main() { //comment
+    double number = 0.0e+1;
+    /*
+    comment
+    comment
+    comment
+    */
+
+    if (number > 5) {
+        cout << text << endl;
+    } else {
+        cout << "Number is less than or equal to 5" << endl;
     }
-    for(int k = 0; k < n; ++k){
-        for(int i = 0; i < n; ++i){
-            for(int j = 0; j < n; ++j){
-                if(gr[i][j] > gr[i][k] + gr[k][j]){
-                    gr[i][j] = gr[i][k] + gr[k][j];
-                }
-            }
-        }
+
+    for (int i = 0; i < number; i++) {
+        cout << i << " ";
     }
-    for(int i = 0; i < n; ++i){
-        if(gr[i][i] < 0){
-            cout << "YES";
-            return 0;
-        }
+
+    while (number > 0) {
+        number--;
     }
-    cout << "NO";
+
+    switch (number) {
+        case 0:
+            cout << "nNumber is now 0" << endl;
+            break;
+        default:
+            cout << "nNumber is not 0" << endl;
+    }
+
+    int numbers[] = {1, 2, 3, 4, 5};
+    for (int num : numbers) {
+        cout << num << " ";
+    }
+
+    int a;
+    cin >> a;
+    cout << a;
+    cout << endl;
+
     return 0;
 }
