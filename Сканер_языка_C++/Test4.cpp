@@ -48,9 +48,7 @@ int main() {
              s.erase(x);
 
        } }else {
-
            cout<<*r.begin()<<endl;
-
        }
 
     }
