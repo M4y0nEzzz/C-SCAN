@@ -27,6 +27,7 @@ class Lex(Enum):
     INTEGERLIT, CHARACTER, FLOATLIT, STRING) = range(133)
 
 
+
 lex_names = []
 for enum_lex in Lex:
     lex_names.append(enum_lex.name)
