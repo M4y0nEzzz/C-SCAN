@@ -1,9 +1,9 @@
-non_digits = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+non_digit = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-digits = '0123456789'
-non_zero_digits = '123456789'
-octal_digits = '01234567'
-hexadecimal_digits = '0123456789abcdefABCDEF'
+digit = '0123456789'
+nonzero_digit = '123456789'
+octal_digit = '01234567'
+hexadecimal_digit = '0123456789abcdefABCDEF'
 
 unsigned_suffix = 'uU'
 float_suffix = 'lLfF'
@@ -12,3 +12,4 @@ exponent_part = 'eE'
 
 sign = '+-'
 
+simple_escape_sequence = '\'\"?\\\a\b\f\n\r\t\v'

@@ -8,5 +8,7 @@ int main(){
     vector <int> v(n, 0);
     for(i: v){
         cout << i;
+    \uBACC;
+    \UAADDCCEE;
     }
 }
