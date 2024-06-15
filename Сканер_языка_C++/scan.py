@@ -133,7 +133,15 @@ def end_of_the_line_comment():
         next_ch()
 
 
-
+def signed_integer():
+    if text.ch in sign:
+        next_ch()
+    if text.ch in digit:
+        next_ch()
+        while text.ch in digit:
+            next_ch()
+    else:
+        error.lexError('Ожидается десятичное число')
 
 def octal_escape():
     first_ch = text.ch
@@ -382,113 +390,88 @@ def next_lex():
             else:
                 lex = Lex.GT # >
 
-        #Литералы
+        # Литералы
         case _ if text.ch in digit:
-            # if text.ch == '0':
-            #     next_ch()
-            #     if text.ch in 'xX':
-            #         next_ch()
-            #         if text.ch in hexadecimal_digits:
-            #             next_ch()
-            #         else:
-            #             error.lexError('Ожидается шестнадцатеричная цифра')
-            #         while text.ch in hexadecimal_digits:
-            #             next_ch()
-            #     elif text.ch in octal_digits:
-            #         next_ch()
-            #         while text.ch in octal_digits:
-            #             next_ch()
-            #         if text.ch in '89':
-            #             next_ch()
-            #             while text.ch in digits:
-            #                 next_ch()
-            #             if text.ch not in '.eEfFdD':
-            #                 error.lexError('Ожидается \'.\', экспонента или суффикс типа')
-
-            # INTEGERLIT
-            if text.ch in nonzero_digit: # decimal-literal + integer_suffix
-                next_ch()
-                if text.ch in digit:
-                    while text.ch in digit:
-                        next_ch()
-                    if text.ch in integer_suffix:
-                        while text.ch in integer_suffix:
-                            next_ch()
-                            lex = Lex.INTEGERLIT
-                    else:
-                        lex = Lex.INTEGERLIT
-
-            elif text.ch == '0': # octal & hex literal + integer_suffix
+            if text.ch == '0':
                 next_ch()
                 if text.ch in 'xX':
+                    next_ch()
                     if text.ch in hexadecimal_digit:
-                        while text.ch in hexadecimal_digit:
-                            next_ch()
-                        if text.ch in integer_suffix:
-                            while text.ch in integer_suffix:
-                                next_ch()
-                                lex = Lex.INTEGERLIT
-                        else:
-                            lex = Lex.INTEGERLIT
+                        next_ch()
                     else:
                         error.lexError('Ожидается шестнадцатеричная цифра')
-
+                    while text.ch in hexadecimal_digit:
+                        next_ch()
                 elif text.ch in octal_digit:
+                    next_ch()
                     while text.ch in octal_digit:
                         next_ch()
-                    if text.ch in integer_suffix:
-                        while text.ch in integer_suffix:
+                    if text.ch in '89':
+                        next_ch()
+                        while text.ch in digit:
                             next_ch()
-                            lex = Lex.INTEGERLIT
-                    else:
-                        next_ch()
-                        lex = Lex.INTEGERLIT
-                else:
-                    next_ch()
-                    lex = Lex.INTEGERLIT
-
-            # FLOATLIT
-            elif text.ch in digit:
+                        if text.ch not in '.eEfFdD':
+                            error.lexError('Ожидается \'.\', экспонента или суффикс типа')
+            while text.ch in digit:
                 next_ch()
-                if text.ch in digit:
-                    while text.ch in digit:
-                        next_ch()
-                    if text.ch == '.':
-                        next_ch()
-                        if text.ch in digit:
-                            while text.ch in digit:
-                                next_ch()
-                                lex = Lex.FLOATLIT
-                elif text.ch == '.':
-                        next_ch()
-                        if text.ch in digit:
-                            while text.ch in digit:
-                                next_ch()
-                                lex = Lex.FLOATLIT
+            if text.ch == '.':
+                next_ch()
+                while text.ch in digit:
+                    next_ch()
                 if text.ch in exponent_part:
                     next_ch()
-                    if text.ch in sign:
+                    signed_integer()
+                if text.ch in float_suffix:
+                    if text.ch in 'fF':
                         next_ch()
-                        if text.ch in digit:
-                            while text.ch in digit:
-                                next_ch()
-                                lex = Lex.FLOATLIT
+                        return Lex.FLOATLIT
                     else:
                         next_ch()
-                        lex = Lex.FLOATLIT
+                # return Lex.DOUBLENUMBER
+            elif text.ch in exponent_part:
+                next_ch()
+                signed_integer()
+                if text.ch in float_suffix:
+                    if text.ch in 'fF':
+                        next_ch()
+                        return Lex.FLOATLIT
+                    else:
+                        next_ch()
+                # return Lex.DOUBLENUMBER
+            elif text.ch in float_suffix:
+                if text.ch in 'fF':
+                    next_ch()
+                    return Lex.FLOATLIT
                 else:
-                    lex = Lex.FLOATLIT
-
-
-
-
-        # case '\'':
-        #     # CHARACTER - его нужно доделать
-        #     if text.ch == 'L':
-        #         next_ch()
-        #         if text.ch == '\'':
-        #             if text.ch == '\'':
-        #                 error.lexError('Ошибка в написании литерала char')
+                    next_ch()
+                # return Lex.DOUBLENUMBER
+            else:
+                if text.ch in integer_suffix:
+                    next_ch()
+                return Lex.INTEGERLIT
+        case '"':  # StringLiteral
+            next_ch()
+            while True:
+                if text.ch == '"':
+                    next_ch()
+                    return Lex.STRING
+                elif text.ch == '\\':
+                    escape_sequence()
+                elif text.ch == text.chEOT:
+                    error.lexError('Не закончена строка')
+                else:
+                    next_ch()
+        case "'":  # CharacterLiteral
+            next_ch()
+            if text.ch == '\\':
+                escape_sequence()
+            else:
+                next_ch()
+            if text.ch == "'":
+                next_ch()
+                return Lex.CHARACTER
+            else:
+                error.lexError('В \'\' кавычках должен быть ЕДИНСТВЕННЫЙ символ')
 
 
 
