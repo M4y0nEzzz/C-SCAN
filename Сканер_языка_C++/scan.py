@@ -187,103 +187,102 @@ def next_lex():
         # Операции и разделители
         case '{':
             next_ch()
-            lex = Lex.BEGIN
+            return Lex.BEGIN
         case '}':
             next_ch()
-            lex = Lex.END
+            return Lex.END
         case '[':
             next_ch()
-            lex = Lex.LSQPAR
+            return Lex.LSQPAR
         case ']':
             next_ch()
-            lex = Lex.RSQPAR
+            return Lex.RSQPAR
         case '#': # #
             next_ch()
             if text.ch == '#': # ##
                 next_ch()
-                lex = Lex.DOUBLEGRID
+                return Lex.DOUBLEGRID
             else:
                 next_ch()
-                lex = Lex.GRID
+                return Lex.GRID
         case '(':
             next_ch()
-            lex = Lex.LPAR
+            return Lex.LPAR
         case ')':
             next_ch()
-            lex = Lex.RPAR
+            return Lex.RPAR
         case ';':
             next_ch()
-            lex = Lex.SEMI
+            return Lex.SEMI
         case ':':
             next_ch()
             if text.ch == '>':  # :>
                 next_ch()
-                lex = Lex.GTCOLON
+                return Lex.GTCOLON
             elif text.ch == ':':
                 next_ch()
-                lex = Lex.DOUBLECOLON  # ::
+                return Lex.DOUBLECOLON  # ::
             else:
-                lex = Lex.COLON
+                return Lex.COLON
         case ',':
             next_ch()
-            lex = Lex.COMMA #,
+            return Lex.COMMA
         case '.':
             next_ch()
             if text.ch == '.':
                 next_ch()
                 if text.ch == '.':
                     next_ch()
-                    lex = Lex.THREEDOT # ...
+                    return Lex.THREEDOT # ...
                 else:
                     error.lexError('Должно быть три точки')
-                # lex = Lex.FLOATLIT
             elif text.ch == '*':
                 next_lex()
-                lex = Lex.DOTMUL # .*
+                return Lex.DOTMUL # .*
             else:
-                lex = Lex.DOT
+                return Lex.DOT
         case '?':
             next_ch()
-            lex = Lex.QUESTIONSIGN  # ?
+            return Lex.QUESTIONSIGN  # ?
         case '+':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.PLUSEQ # +=
+                return Lex.PLUSEQ # +=
             elif text.ch == '+':
                 next_ch()
-                lex = Lex.INC # ++
+                return Lex.INC # ++
             else:
-                lex = Lex.PLUS
+                return Lex.PLUS
         case '-':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.MINUSEQ
+                return Lex.MINUSEQ
             elif text.ch == '-':
                 next_ch()
-                lex = Lex.DEC
+                return Lex.DEC
             elif text.ch == '>':
                 next_ch()
                 if text.ch == '*':
                     next_ch()
-                    lex = Lex.ARROWMUL
+                    return Lex.ARROWMUL
                 else:
-                    lex = Lex.ARROW
+                    return Lex.ARROW
             else:
-                lex = Lex.MINUS
+                return Lex.MINUS
         case '*':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.MULEQ
+                return Lex.MULEQ
             else:
-                lex = Lex.MUL
+                return Lex.MUL
         case '/':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.DIVEQ  # /=
+                return Lex.DIVEQ  # /=
             elif text.ch == '/':
                 end_of_the_line_comment()  # EndOfTheLineComment
                 next_lex()
@@ -291,104 +290,107 @@ def next_lex():
                 traditional_comment()  # TraditionalComment
                 next_lex()
             else:
-                lex = Lex.DIV # /
+                return Lex.DIV # /
         case '%':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.MODEQ
+                return Lex.MODEQ
             elif text.ch == '>':  # %>
                 next_ch()
-                lex = Lex.GTMOD
+                return Lex.GTMOD
             elif text.ch == ':':
                 next_ch()
                 if text.ch == '%':
                     next_ch()
                     if text.ch == ':':
                         next_ch()
-                        lex = Lex.DOUBLEMODCOLON  # %:%:
+                        return Lex.DOUBLEMODCOLON  # %:%:
                 else:
-                    lex = Lex.MODCOLON  # %:
+                    return Lex.MODCOLON  # %:
             else:
-                lex = Lex.MOD
+                return Lex.MOD
         case '^':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.CARETEQ
+                return Lex.CARETEQ
             else:
-                lex = Lex.CARET
+                return Lex.CARET
         case '&':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.ANDEQ # &=
+                return Lex.ANDEQ # &=
             elif text.ch == '&':
                 next_ch()
-                lex = Lex.ANDAND # &&
+                return Lex.ANDAND # &&
             else:
-                lex = Lex.AND
+                return Lex.AND
         case '|':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.OREQ
+                return Lex.OREQ
             elif text.ch == '|':
                 next_ch()
-                lex = Lex.OROR
+                return Lex.OROR
             else:
-                lex = Lex.OR
+                next_ch()
+                return Lex.OR
         case '~':
             next_ch()
-            lex = Lex.TILDA
+            return Lex.TILDA
         case '!':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.NOTEQ
+                return Lex.NOTEQ
             else:
-                lex = Lex.NOT
+                next_ch()
+                return Lex.NOT
         case '=':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.EQEQ  # ==
+                return Lex.EQEQ  # ==
             else:
-                lex = Lex.EQ
+                next_ch()
+                return Lex.EQ
         case '<':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.LTEQ  # <=
+                return Lex.LTEQ  # <=
             elif text.ch == '<':
                 next_ch()
                 if text.ch == '=':
                     next_ch()
-                    lex = Lex.LTLTEQ  # <<=
+                    return Lex.LTLTEQ  # <<=
                 else:  # <<
-                    lex = Lex.LTLT  # <<
+                    return Lex.LTLT  # <<
             elif text.ch == ':':
                 next_ch()
-                lex = Lex.LTCOLON  # <:
+                return Lex.LTCOLON  # <:
             elif text.ch == '%':
                 next_ch()
-                lex = Lex.LTMOD  # <%
+                return Lex.LTMOD  # <%
             else:
-                lex = Lex.LT  # <
+                return Lex.LT  # <
         case '>':
             next_ch()
             if text.ch == '=':
                 next_ch()
-                lex = Lex.GTEQ # >=
+                return Lex.GTEQ # >=
             elif text.ch == '>':
                 next_ch()
                 if text.ch == '=':
                     next_ch()
-                    lex = Lex.GTGTEQ # >>=
+                    return Lex.GTGTEQ # >>=
                 else:  # >>
-                    lex = Lex.GTGT # >>
+                    return Lex.GTGT # >>
             else:
-                lex = Lex.GT # >
+                return Lex.GT # >
 
         # Литералы
         case _ if text.ch in digit:
