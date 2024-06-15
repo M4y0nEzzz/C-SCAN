@@ -182,7 +182,7 @@ def next_lex():
             while text.ch in non_digit + digit:  # !!!!!
                 name += text.ch
                 next_ch()
-            lex = keywords.get(name, Lex.IDENTIFIER)
+            return keywords.get(name, Lex.IDENTIFIER)
 
         # Операции и разделители
         case '{':
@@ -478,6 +478,6 @@ def next_lex():
 
 
         case text.chEOT:
-            lex = Lex.EOT
+            return Lex.EOT
         case _:
             error.lexError("Недопустимый символ")
