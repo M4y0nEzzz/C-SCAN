@@ -168,15 +168,13 @@ def escape_sequence():
 
 def next_lex():
     global name, lex
-    while text.ch in {text.chSPACE, text.chHT, text.chFF}:
+    while text.ch in {text.chSPACE, text.chHT, text.chFF, text.chEOL}:
         next_ch()
     match text.ch:
-        case text.chEOL:
-            next_ch()
-            next_lex()
 
         # Идентификаторы и служебные слова
         case _ if text.ch in non_digit + '\\' : # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
+
             name = text.ch
             next_ch()
             while text.ch in non_digit + digit:  # !!!!!
@@ -203,7 +201,6 @@ def next_lex():
                 next_ch()
                 return Lex.DOUBLEGRID
             else:
-                next_ch()
                 return Lex.GRID
         case '(':
             next_ch()
@@ -285,10 +282,10 @@ def next_lex():
                 return Lex.DIVEQ  # /=
             elif text.ch == '/':
                 end_of_the_line_comment()  # EndOfTheLineComment
-                next_lex()
+                return next_lex()
             elif text.ch == '*':
                 traditional_comment()  # TraditionalComment
-                next_lex()
+                return next_lex()
             else:
                 return Lex.DIV # /
         case '%':

@@ -11,5 +11,3 @@ integer_suffix = 'uUlL'
 exponent_part = 'eE'
 
 sign = '+-'
-
-simple_escape_sequence = '\'\"?\\\a\b\f\n\r\t\v'
