@@ -114,7 +114,8 @@ keywords = {
     'xor_eq': Lex.XOREQ
 }
 
-def traditional_comment():
+
+def multiline_comment():
     next_ch()
     while True:
         if text.ch == '*':
@@ -127,13 +128,14 @@ def traditional_comment():
         else:
             next_ch()
 
-def end_of_the_line_comment():
+
+def single_line_comment():
     next_ch()
     while text.ch not in {text.chEOL, text.chEOT}:
         next_ch()
 
 
-def signed_integer():
+def signed_int():
     if text.ch in sign:
         next_ch()
     if text.ch in digit:
@@ -143,7 +145,8 @@ def signed_integer():
     else:
         error.lexError('Ожидается десятичное число')
 
-def octal_escape():
+
+def octal_escape_sequence():
     first_ch = text.ch
     next_ch()
     if text.ch in octal_digit:
@@ -154,12 +157,25 @@ def octal_escape():
             else:
                 error.lexError('Первая цифра после \\ должна быть от 0 до 3')
 
+
+def hexadecimal_escape_sequence():
+    first_ch = text.ch
+    next_ch()
+    if text.ch in hexadecimal_digit:
+        next_ch()
+        if text.ch in hexadecimal_digit:
+            if first_ch in '0123':
+                next_ch()
+            else:
+                error.lexError('Первая цифра после \\ должна быть от 0 до 3')
+
+
 def escape_sequence():
     next_ch()
-    if text.ch in '\"\'\\':
+    if text.ch in '\"\'\\?abfnrtv':
         next_ch()
     elif text.ch in octal_digit:
-        octal_escape()
+        octal_escape_sequence()
     else:
         error.lexError('Недопустимый символ после \\')
 
@@ -167,13 +183,47 @@ def escape_sequence():
 
 
 def next_lex():
-    global name, lex
+    global name
     while text.ch in {text.chSPACE, text.chHT, text.chFF, text.chEOL}:
         next_ch()
     match text.ch:
 
         # Идентификаторы и служебные слова
-        case _ if text.ch in non_digit + '\\' : # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
+        case 'L':
+            next_ch()
+            if text.ch == "'":
+                next_ch()
+                if text.ch == '\\':
+                    escape_sequence()
+                else:
+                    next_ch()
+                if text.ch == "'":
+                    next_ch()
+                    return Lex.CHARACTER
+                else:
+                    error.lexError('В \'\' кавычках должен быть ЕДИНСТВЕННЫЙ символ')
+            elif text.ch == '"':
+                next_ch()
+                while True:
+                    if text.ch == '"':
+                        next_ch()
+                        return Lex.STRING
+                    elif text.ch == '\\':
+                        escape_sequence()
+                    elif text.ch == text.chEOT:
+                        error.lexError('Не закончена строка')
+                    else:
+                        next_ch()
+            elif text.ch in non_digit + '\\':
+                name = 'L' + text.ch
+                next_ch()
+                while text.ch in non_digit + digit:  # !!!!!
+                    name += text.ch
+                    next_ch()
+                return keywords.get(name, Lex.IDENTIFIER)
+            else:
+                return Lex.IDENTIFIER
+        case _ if text.ch in non_digit + '\\': # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
 
             name = text.ch
             next_ch()
@@ -226,11 +276,21 @@ def next_lex():
             return Lex.COMMA
         case '.':
             next_ch()
-            if text.ch == '.':
+            if text.ch in digit:  # Digits
+                next_ch()
+                while text.ch in digit:
+                    next_ch()
+                if text.ch in exponent_part:  # ExponentPart
+                    next_ch()
+                    signed_int()
+                if text.ch in float_suffix:
+                    next_ch()
+                return Lex.FLOATLIT
+            elif text.ch == '.':
                 next_ch()
                 if text.ch == '.':
                     next_ch()
-                    return Lex.THREEDOT # ...
+                    return Lex.THREEDOT  # ...
                 else:
                     error.lexError('Должно быть три точки')
             elif text.ch == '*':
@@ -245,7 +305,7 @@ def next_lex():
             next_ch()
             if text.ch == '=':
                 next_ch()
-                return Lex.PLUSEQ # +=
+                return Lex.PLUSEQ  # +=
             elif text.ch == '+':
                 next_ch()
                 return Lex.INC # ++
@@ -281,13 +341,13 @@ def next_lex():
                 next_ch()
                 return Lex.DIVEQ  # /=
             elif text.ch == '/':
-                end_of_the_line_comment()  # EndOfTheLineComment
+                single_line_comment()
                 return next_lex()
             elif text.ch == '*':
-                traditional_comment()  # TraditionalComment
+                multiline_comment()
                 return next_lex()
             else:
-                return Lex.DIV # /
+                return Lex.DIV  # /
         case '%':
             next_ch()
             if text.ch == '=':
@@ -318,10 +378,10 @@ def next_lex():
             next_ch()
             if text.ch == '=':
                 next_ch()
-                return Lex.ANDEQ # &=
+                return Lex.ANDEQ  # &=
             elif text.ch == '&':
                 next_ch()
-                return Lex.ANDAND # &&
+                return Lex.ANDAND  # &&
             else:
                 return Lex.AND
         case '|':
@@ -378,16 +438,16 @@ def next_lex():
             next_ch()
             if text.ch == '=':
                 next_ch()
-                return Lex.GTEQ # >=
+                return Lex.GTEQ  # >=
             elif text.ch == '>':
                 next_ch()
                 if text.ch == '=':
                     next_ch()
-                    return Lex.GTGTEQ # >>=
+                    return Lex.GTGTEQ  # >>=
                 else:  # >>
-                    return Lex.GTGT # >>
+                    return Lex.GTGT  # >>
             else:
-                return Lex.GT # >
+                return Lex.GT  # >
 
         # Литералы
         case _ if text.ch in digit:
@@ -419,31 +479,31 @@ def next_lex():
                     next_ch()
                 if text.ch in exponent_part:
                     next_ch()
-                    signed_integer()
+                    signed_int()
                 if text.ch in float_suffix:
                     if text.ch in 'fF':
                         next_ch()
                         return Lex.FLOATLIT
                     else:
                         next_ch()
-                # return Lex.DOUBLENUMBER
+                return Lex.FLOATLIT
             elif text.ch in exponent_part:
                 next_ch()
-                signed_integer()
+                signed_int()
                 if text.ch in float_suffix:
                     if text.ch in 'fF':
                         next_ch()
                         return Lex.FLOATLIT
                     else:
                         next_ch()
-                # return Lex.DOUBLENUMBER
+                return Lex.FLOATLIT
             elif text.ch in float_suffix:
                 if text.ch in 'fF':
                     next_ch()
                     return Lex.FLOATLIT
                 else:
                     next_ch()
-                # return Lex.DOUBLENUMBER
+                return Lex.FLOATLIT
             else:
                 if text.ch in integer_suffix:
                     next_ch()
@@ -471,8 +531,6 @@ def next_lex():
                 return Lex.CHARACTER
             else:
                 error.lexError('В \'\' кавычках должен быть ЕДИНСТВЕННЫЙ символ')
-
-
 
         case text.chEOT:
             return Lex.EOT

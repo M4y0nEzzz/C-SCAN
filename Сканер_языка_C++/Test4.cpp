@@ -19,7 +19,7 @@ int main() {
     for(cin >> n; n > 0; --n) {
        string cmd;
        cin >> cmd;
-       if (cmd == "ADD") {
+       if (cmd == L"ADD") {
           int x;
           cin >> x;
           auto it = s.find(x);
@@ -33,7 +33,7 @@ int main() {
              r.insert(*right - x);
              s.insert(x);
           }
-       } else if (cmd == "DEL") {
+       } else if (cmd == L"DEL") {
            int x;
            cin >> x;
            auto it = s.find(x);
