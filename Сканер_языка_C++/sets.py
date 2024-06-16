@@ -1,5 +1,4 @@
 non_digit = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
 digit = '0123456789'
 nonzero_digit = '123456789'
 octal_digit = '01234567'

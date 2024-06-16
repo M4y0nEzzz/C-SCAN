@@ -508,7 +508,7 @@ def next_lex():
                 if text.ch in integer_suffix:
                     next_ch()
                 return Lex.INTEGERLIT
-        case '"':  # StringLiteral
+        case '"':  # STRING
             next_ch()
             while True:
                 if text.ch == '"':
@@ -520,7 +520,7 @@ def next_lex():
                     error.lexError('Не закончена строка')
                 else:
                     next_ch()
-        case "'":  # CharacterLiteral
+        case "'":  # CHARACTER
             next_ch()
             if text.ch == '\\':
                 escape_sequence()
