@@ -163,13 +163,6 @@ def hexadecimal_escape_sequence():
         error.lexError('Ожидается шестнадцатеричная цифра')
 
 
-def UCNToASCII(universal_character_name):
-    unicode = int(universal_character_name, 16)
-    if unicode > 127:
-        raise ValueError("UCN вне диапазона ASCII")
-    return chr(unicode)
-
-
 def escape_sequence():
     universal_character_name = ''
     next_ch()
@@ -242,31 +235,6 @@ def next_lex():
                         error.lexError('Внутри строки не должен встречаться символ двойной кавычки')
                     else:
                         next_ch()
-            elif text.ch == '\\':
-                next_ch()
-                if text.ch == 'u':
-                    next_ch()
-                    universal_character_name = ''
-                    for _ in range(3):
-                        if text.ch in hexadecimal_digit:
-                            universal_character_name += text.ch
-                            next_ch()
-                        else:
-                            error.lexError('UCN дописан не до конца')
-                    # print('UCN =', universal_character_name)
-                    return UCNToASCII(universal_character_name)
-                elif text.ch == 'U':
-                    next_ch()
-                    universal_character_name = ''
-                    for _ in range(7):
-                        if text.ch in hexadecimal_digit:
-                            universal_character_name += text.ch
-                            next_ch()
-                        else:
-                            error.lexError('UCN дописан не до конца')
-                    # print('UCN =', universal_character_name)
-                    return UCNToASCII(universal_character_name)
-
             elif text.ch in non_digit:
                 name = 'L' + text.ch
                 next_ch()
@@ -277,7 +245,7 @@ def next_lex():
                 return keywords.get(name, Lex.IDENTIFIER)
             else:
                 return Lex.IDENTIFIER
-        case _ if text.ch in non_digit + '\\':
+        case _ if text.ch in non_digit + '\\': # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
             name = text.ch
             next_ch()
             while text.ch in non_digit + digit:  # !!!!!
