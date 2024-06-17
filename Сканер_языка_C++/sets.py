@@ -4,7 +4,6 @@ nonzero_digit = '123456789'
 octal_digit = '01234567'
 hexadecimal_digit = '0123456789abcdefABCDEF'
 
-
 unsigned_suffix = 'uU'
 long_suffix = 'lL'
 float_suffix = 'fF'
