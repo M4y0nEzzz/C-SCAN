@@ -18,7 +18,7 @@ class Lex(Enum):
     VOLATILE, WCHART, WHILE, COMP,
 
     BEGIN, END, LSQPAR, RSQPAR, GRID, DOUBLEGRID, LPAR, RPAR, LTCOLON, GTCOLON, LTMOD,
-    SEMI, COLON, DOUBLECOLON, DOT, DOTMUL, PLUS, MINUS, MUL, DIV, MOD, CARET,
+    SEMI, COLON, DOUBLECOLON, DOT, POINTER_DEFERENCING, PLUS, MINUS, MUL, DIV, MOD, CARET,
     TILDA, EQ, LT, GT, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, CARETEQ, ORSIGNEQ, LTLTEQ, GTGTEQ, LTLT, GTGT,
     EQEQ, LTEQ, GTEQ, ANDAND, OROR, INC, DEC, COMMA, ARROW, ARROWMUL, THREEDOT, BACKSLASH,
 
@@ -111,6 +111,32 @@ keywords = {
     'xor': Lex.CARET,
     'xor_eq': Lex.CARETEQ
 }
+
+
+def unicode_character_name():
+    next_ch()
+    if text.ch == 'u':
+        next_ch()
+        unicode = ''
+        for _ in range(4):
+            if text.ch in hexadecimal_digit:
+                unicode += text.ch
+                next_ch()
+            else:
+                error.lexError('UCN дописан не до конца')
+        return chr(int(unicode, 16))
+    elif text.ch == 'U':
+        next_ch()
+        unicode = ''
+        for _ in range(8):
+            if text.ch in hexadecimal_digit:
+                unicode += text.ch
+                next_ch()
+            else:
+                error.lexError('UCN дописан не до конца')
+        return chr(int(unicode, 16))
+    else:
+        error.lexError('Ожидается u или U после \'\\\' (universal-character-name)')
 
 
 def multiline_comment():
@@ -235,22 +261,27 @@ def next_lex():
                         error.lexError('Внутри строки не должен встречаться символ двойной кавычки')
                     else:
                         next_ch()
-            elif text.ch in non_digit:
+            elif text.ch in non_digit + digit:
                 name = 'L' + text.ch
                 next_ch()
-                # именно здесь делать преобразование
                 while text.ch in non_digit + digit:
                     name += text.ch
                     next_ch()
                 return keywords.get(name, Lex.IDENTIFIER)
             else:
                 return Lex.IDENTIFIER
-        case _ if text.ch in non_digit + '\\': # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
-            name = text.ch
-            next_ch()
-            while text.ch in non_digit + digit:  # !!!!!
-                name += text.ch
+        case _ if text.ch in non_digit + '\\':
+            if text.ch == '\\':
+                name = unicode_character_name()
+            else:
+                name = text.ch
                 next_ch()
+            while text.ch in non_digit + '\\' + digit:
+                if text.ch == '\\':
+                    name += unicode_character_name()
+                else:
+                    name += text.ch
+                    next_ch()
             return keywords.get(name, Lex.IDENTIFIER)
 
         # Операции и разделители
@@ -297,11 +328,11 @@ def next_lex():
             return Lex.COMMA
         case '.':
             next_ch()
-            if text.ch in digit:  # Digits
+            if text.ch in digit:
                 next_ch()
                 while text.ch in digit:
                     next_ch()
-                if text.ch in exponent_part:  # ExponentPart
+                if text.ch in exponent_part:
                     next_ch()
                     signed_int()
                 if text.ch in float_or_double_suffix:
@@ -322,7 +353,7 @@ def next_lex():
                     error.lexError('Должно быть три точки')
             elif text.ch == '*':
                 next_lex()
-                return Lex.DOTMUL # .*
+                return Lex.POINTER_DEFERENCING # .*
             else:
                 return Lex.DOT
         # Триграфы:
@@ -484,7 +515,7 @@ def next_lex():
                 if text.ch == '=':
                     next_ch()
                     return Lex.LTLTEQ  # <<=
-                else:  # <<
+                else:
                     return Lex.LTLT  # <<
             elif text.ch == ':':
                 next_ch()
@@ -504,7 +535,7 @@ def next_lex():
                 if text.ch == '=':
                     next_ch()
                     return Lex.GTGTEQ  # >>=
-                else:  # >>
+                else:
                     return Lex.GTGT  # >>
             else:
                 return Lex.GT  # >
@@ -521,6 +552,8 @@ def next_lex():
                         error.lexError('Ожидается шестнадцатеричная цифра')
                     while text.ch in hexadecimal_digit:
                         next_ch()
+                    if text.ch == '.':
+                        error.lexError('Ожидается шестнадцатеричная цифра')
                 elif text.ch in octal_digit:
                     next_ch()
                     while text.ch in octal_digit:
@@ -531,8 +564,6 @@ def next_lex():
                     next_ch()
                     while text.ch in digit:
                         next_ch()
-                        # if text.ch not in '.eEfFdD':
-                        #     error.lexError('Ожидается \'.\', экспонента или суффикс типа') #после хекс не мб точки
             while text.ch in digit:
                 next_ch()
             if text.ch == '.':
@@ -551,6 +582,7 @@ def next_lex():
                         return Lex.LONG_DOUBLE_LIT
                 else:
                     return Lex.DOUBLE_LIT
+
             elif text.ch in exponent_part:
                 next_ch()
                 signed_int()
@@ -563,13 +595,7 @@ def next_lex():
                         return Lex.LONG_DOUBLE_LIT
                 else:
                     return Lex.DOUBLE_LIT
-            # elif text.ch in float_suffix: #должна быть еЕ после целого числа, чтобы можго было записать f
-            #     if text.ch in 'fF':
-            #         next_ch()
-            #         return Lex.FLOATLIT
-            #     else:
-            #         next_ch()
-            #     return Lex.FLOATLIT
+
             else:
                 if text.ch in integer_suffix:
                     if text.ch in unsigned_suffix:
@@ -586,8 +612,8 @@ def next_lex():
                             return Lex.INTEGER_LIT
                         else:
                             return Lex.INTEGER_LIT
-                next_ch()
-                return Lex.INTEGER_LIT
+                else:
+                    return Lex.INTEGER_LIT
 
         case '"':  # STRING
             next_ch()

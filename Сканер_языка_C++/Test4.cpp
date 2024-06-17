@@ -5,7 +5,6 @@ using namespace std;
 const long long Inf = 1e18;
 
 int main() {
-    // fast input-output
     ios_base::sync_with_stdio(0);
     cin.tie(0);
 
@@ -50,7 +49,6 @@ int main() {
        } }else {
            cout<<*r.begin()<<endl;
        }
-
     }
 }
 
