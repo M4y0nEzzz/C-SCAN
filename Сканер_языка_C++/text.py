@@ -3,6 +3,7 @@ from glob import glob
 import sys
 import loc
 import error
+from sets import hexadecimal_digit
 
 chEOT = '\0'
 chEOL = '\n'
@@ -49,3 +50,33 @@ def next_ch():
             line = ''
             ch = chEOL
             loc.pos = 0
+
+
+def string_to_integer_by_16(string):
+    hex_digits = '0123456789ABCDEF'
+    result = 0
+    for char in string:
+        digit = hex_digits.index(char.upper())
+        result = result * 16 + digit
+    return result
+
+
+def unicode_escape():
+    global ch, slash
+    slash = False
+    next_ch()
+    unicode = ''
+    while ch == 'u':
+        next_ch()
+    for _ in range(3):
+        if ch in hexadecimal_digit:
+            unicode += ch
+            next_ch()
+        else:
+            error.lexError('Unicode дописан не до конца')
+    if ch in hexadecimal_digit:
+        unicode += ch
+    else:
+        error.lexError('Unicode дописан не до конца')
+    # print('Unicode =', unicode)
+    return chr(string_to_integer_by_16(unicode))

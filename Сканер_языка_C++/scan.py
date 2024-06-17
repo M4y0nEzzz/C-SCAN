@@ -7,24 +7,22 @@ import text
 from sets import *
 
 
-
 class Lex(Enum):
-    (AND, ANDEQ, ASM, AUTO, BITAND, BITOR, BOOL, BREAK, CASE,
+    (AND, ANDEQ, ASM, AUTO, BOOL, BREAK, CASE,
     CONTINUE, DEFAULT, DELETE, DO, DOUBLE, DYNAMIC_CAST, ELSE, ENUM, EXPLICIT,
     GOTO, IF, INLINE, INT, LONG, MUTABLE, NAMESPACE, NEW, NOT,
     PUBLIC, REGISTER, REINTERPRETCAST, RETURN, SHORT, SIGNED, SIZEOF, STATIC, STATICCAST,
     TRY, TYPEDEF, TYPEID, TYPENAME, UNION, UNSIGNED, USING, VIRTUAL, VOID,
-    CATCH, CHAR, CLASS, COMPL, CONST, CONSTCAST, EXPORT, EXTERN, FALSE, FLOAT, FOR, FRIEND,
+    CATCH, CHAR, CLASS, CONST, CONSTCAST, EXPORT, EXTERN, FALSE, FLOAT, FOR, FRIEND,
     NOTEQ, OPERATOR, OR, OREQ, PRIVATE, PROTECTED, STRUCT, SWITCH, TEMPLATE, THIS, THROW, TRUE,
-    VOLATILE, WCHART, WHILE, XOR, XOREQ,
+    VOLATILE, WCHART, WHILE, COMP,
 
-    BEGIN, END, LSQPAR, RSQPAR, GRID, DOUBLEGRID, LPAR, RPAR, LTCOLON, GTCOLON, LTMOD, GTMOD, MODCOLON,
-    DOUBLEMODCOLON, SEMI, COLON, QUESTIONSIGN, DOUBLECOLON, DOT, DOTMUL, PLUS, MINUS, MUL, DIV, MOD, CARET,
+    BEGIN, END, LSQPAR, RSQPAR, GRID, DOUBLEGRID, LPAR, RPAR, LTCOLON, GTCOLON, LTMOD,
+    SEMI, COLON, DOUBLECOLON, DOT, DOTMUL, PLUS, MINUS, MUL, DIV, MOD, CARET,
     TILDA, EQ, LT, GT, PLUSEQ, MINUSEQ, MULEQ, DIVEQ, MODEQ, CARETEQ, ORSIGNEQ, LTLTEQ, GTGTEQ, LTLT, GTGT,
-    EQEQ, LTEQ, GTEQ, ANDAND, OROR, INC, DEC, COMMA, ARROW, ARROWMUL, THREEDOT, COMP,
+    EQEQ, LTEQ, GTEQ, ANDAND, OROR, INC, DEC, COMMA, ARROW, ARROWMUL, THREEDOT, BACKSLASH,
 
-    IDENTIFIER, EOT,
-    INTEGERLIT, CHARACTER, FLOATLIT, STRING) = range(133)
+    IDENTIFIER, EOT, INTEGER_LIT, CHARACTER, STRING, FLOAT_LIT, DOUBLE_LIT, LONG_DOUBLE_LIT) = range(127)
 
 
 
@@ -37,19 +35,19 @@ name = ''
 
 
 keywords = {
-    'and': Lex.AND,
+    'and': Lex.ANDAND,
     'and_eq': Lex.ANDEQ,
     'asm': Lex.ASM,
     'auto': Lex.AUTO,
-    'bitand': Lex.BITAND,
-    'bitor': Lex.BITOR,
+    'bitand': Lex.AND,
+    'bitor': Lex.OR,
     'bool': Lex.BOOL,
     'break': Lex.BREAK,
     'case': Lex.CASE,
     'catch': Lex.CATCH,
     'char': Lex.CHAR,
     'class': Lex.CLASS,
-    'compl': Lex.COMPL,
+    'compl': Lex.TILDA,
     'const': Lex.CONST,
     'const_cast': Lex.CONSTCAST,
     'comp': Lex.COMP,
@@ -79,7 +77,7 @@ keywords = {
     'not': Lex.NOT,
     'not_eq': Lex.NOTEQ,
     'operator': Lex.OPERATOR,
-    'or': Lex.OR,
+    'or': Lex.OROR,
     'or_eq': Lex.OREQ,
     'private': Lex.PRIVATE,
     'protected': Lex.PROTECTED,
@@ -110,8 +108,8 @@ keywords = {
     'volatile': Lex.VOLATILE,
     'wchar_t': Lex.WCHART,
     'while': Lex.WHILE,
-    'xor': Lex.XOR,
-    'xor_eq': Lex.XOREQ
+    'xor': Lex.CARET,
+    'xor_eq': Lex.CARETEQ
 }
 
 
@@ -147,39 +145,60 @@ def signed_int():
 
 
 def octal_escape_sequence():
-    first_ch = text.ch
     next_ch()
     if text.ch in octal_digit:
         next_ch()
         if text.ch in octal_digit:
-            if first_ch in '0123':
-                next_ch()
-            else:
-                error.lexError('Первая цифра после \\ должна быть от 0 до 3')
+            next_ch()
+            if text.ch in digit + non_digit:
+                error.lexError('Octal-escape-sequence может состоять не более чем из ТРЕХ ВОСЬМЕРИЧНЫХ ЦИФР')
 
 
 def hexadecimal_escape_sequence():
-    first_ch = text.ch
     next_ch()
     if text.ch in hexadecimal_digit:
-        next_ch()
-        if text.ch in hexadecimal_digit:
-            if first_ch in '0123':
-                next_ch()
-            else:
-                error.lexError('Первая цифра после \\ должна быть от 0 до 3')
+        while text.ch in hexadecimal_digit:
+            next_ch()
+    else:
+        error.lexError('Ожидается шестнадцатеричная цифра')
+
+
+def UCNToASCII(universal_character_name):
+    unicode = int(universal_character_name, 16)
+    if unicode > 127:
+        raise ValueError("UCN вне диапазона ASCII")
+    return chr(unicode)
 
 
 def escape_sequence():
+    universal_character_name = ''
     next_ch()
-    if text.ch in '\"\'\\?abfnrtv':
+    if text.ch in '\"\'?abfnrtv':
         next_ch()
     elif text.ch in octal_digit:
         octal_escape_sequence()
+    elif text.ch == 'x':
+        hexadecimal_escape_sequence()
+    elif text.ch == 'u':
+        next_ch()
+        for _ in range(3):
+            if text.ch in hexadecimal_digit:
+                universal_character_name += text.ch
+                next_ch()
+            else:
+                error.lexError('UCN дописан не до конца')
+        # print('UCN =', universal_character_name)
+    elif text.ch == 'U':
+        next_ch()
+        for _ in range(7):
+            if text.ch in hexadecimal_digit:
+                universal_character_name += text.ch
+                next_ch()
+            else:
+                error.lexError('UCN дописан не до конца')
+        # print('UCN =', universal_character_name)
     else:
         error.lexError('Недопустимый символ после \\')
-
-
 
 
 def next_lex():
@@ -193,15 +212,20 @@ def next_lex():
             next_ch()
             if text.ch == "'":
                 next_ch()
-                if text.ch == '\\':
-                    escape_sequence()
-                else:
-                    next_ch()
-                if text.ch == "'":
-                    next_ch()
-                    return Lex.CHARACTER
-                else:
-                    error.lexError('В \'\' кавычках должен быть ЕДИНСТВЕННЫЙ символ')
+                while True:
+                    if text.ch == "'":
+                        next_ch()
+                        return Lex.CHARACTER
+                    elif text.ch == '\\':
+                        escape_sequence()
+                    elif text.ch == text.chEOT:
+                        error.lexError('Неправильно написан character-literal')
+                    elif text.ch == text.chEOL:
+                        error.lexError('Неправильно написан character-literal')
+                    elif text.ch == "'":
+                        error.lexError('Внутри character-literal не должен встречаться символ одинарной кавычки')
+                    else:
+                        next_ch()
             elif text.ch == '"':
                 next_ch()
                 while True:
@@ -212,19 +236,48 @@ def next_lex():
                         escape_sequence()
                     elif text.ch == text.chEOT:
                         error.lexError('Не закончена строка')
+                    elif text.ch == text.chEOL:
+                        error.lexError('Не закончена строка')
+                    elif text.ch == '"':
+                        error.lexError('Внутри строки не должен встречаться символ двойной кавычки')
                     else:
                         next_ch()
-            elif text.ch in non_digit + '\\':
+            elif text.ch == '\\':
+                next_ch()
+                if text.ch == 'u':
+                    next_ch()
+                    universal_character_name = ''
+                    for _ in range(3):
+                        if text.ch in hexadecimal_digit:
+                            universal_character_name += text.ch
+                            next_ch()
+                        else:
+                            error.lexError('UCN дописан не до конца')
+                    # print('UCN =', universal_character_name)
+                    return UCNToASCII(universal_character_name)
+                elif text.ch == 'U':
+                    next_ch()
+                    universal_character_name = ''
+                    for _ in range(7):
+                        if text.ch in hexadecimal_digit:
+                            universal_character_name += text.ch
+                            next_ch()
+                        else:
+                            error.lexError('UCN дописан не до конца')
+                    # print('UCN =', universal_character_name)
+                    return UCNToASCII(universal_character_name)
+
+            elif text.ch in non_digit:
                 name = 'L' + text.ch
                 next_ch()
-                while text.ch in non_digit + digit:  # !!!!!
+                # именно здесь делать преобразование
+                while text.ch in non_digit + digit:
                     name += text.ch
                     next_ch()
                 return keywords.get(name, Lex.IDENTIFIER)
             else:
                 return Lex.IDENTIFIER
-        case _ if text.ch in non_digit + '\\': # !!! _a..zA..Z \uDDDD  \UDDDDDDDD
-
+        case _ if text.ch in non_digit + '\\':
             name = text.ch
             next_ch()
             while text.ch in non_digit + digit:  # !!!!!
@@ -265,7 +318,7 @@ def next_lex():
             next_ch()
             if text.ch == '>':  # :>
                 next_ch()
-                return Lex.GTCOLON
+                return Lex.RSQPAR
             elif text.ch == ':':
                 next_ch()
                 return Lex.DOUBLECOLON  # ::
@@ -283,9 +336,15 @@ def next_lex():
                 if text.ch in exponent_part:  # ExponentPart
                     next_ch()
                     signed_int()
-                if text.ch in float_suffix:
-                    next_ch()
-                return Lex.FLOATLIT
+                if text.ch in float_or_double_suffix:
+                    if text.ch in float_suffix:
+                        next_ch()
+                        return Lex.FLOAT_LIT
+                    elif text.ch in long_suffix:
+                        next_ch()
+                        return Lex.LONG_DOUBLE_LIT
+                else:
+                    return Lex.DOUBLE_LIT
             elif text.ch == '.':
                 next_ch()
                 if text.ch == '.':
@@ -298,9 +357,42 @@ def next_lex():
                 return Lex.DOTMUL # .*
             else:
                 return Lex.DOT
+        # Триграфы:
         case '?':
             next_ch()
-            return Lex.QUESTIONSIGN  # ?
+            if text.ch == '?':
+                next_ch()
+                if text.ch == '=':
+                    next_ch()
+                    return Lex.GRID
+                elif text.ch == '/':
+                    next_ch()
+                    return Lex.BACKSLASH
+                elif text.ch == '\'':
+                    next_ch()
+                    return Lex.CARET
+                elif text.ch == '(':
+                    next_ch()
+                    return Lex.LSQPAR
+                elif text.ch == ')':
+                    next_ch()
+                    return Lex.RSQPAR
+                elif text.ch == '!':
+                    next_ch()
+                    return Lex.OR
+                elif text.ch == '<':
+                    next_ch()
+                    return Lex.BEGIN
+                elif text.ch == '>':
+                    next_ch()
+                    return Lex.END
+                elif text.ch == '-':
+                    next_ch()
+                    return Lex.TILDA
+                else:
+                    error.lexError('Ошибка в написании триграфа')
+            else:
+                error.lexError('Ошибка в написании триграфа')
         case '+':
             next_ch()
             if text.ch == '=':
@@ -355,16 +447,16 @@ def next_lex():
                 return Lex.MODEQ
             elif text.ch == '>':  # %>
                 next_ch()
-                return Lex.GTMOD
+                return Lex.END
             elif text.ch == ':':
                 next_ch()
                 if text.ch == '%':
                     next_ch()
                     if text.ch == ':':
                         next_ch()
-                        return Lex.DOUBLEMODCOLON  # %:%:
+                        return Lex.DOUBLEGRID  # %:%:
                 else:
-                    return Lex.MODCOLON  # %:
+                    return Lex.GRID  # %:
             else:
                 return Lex.MOD
         case '^':
@@ -428,10 +520,10 @@ def next_lex():
                     return Lex.LTLT  # <<
             elif text.ch == ':':
                 next_ch()
-                return Lex.LTCOLON  # <:
+                return Lex.LSQPAR  # <:
             elif text.ch == '%':
                 next_ch()
-                return Lex.LTMOD  # <%
+                return Lex.BEGIN  # <%
             else:
                 return Lex.LT  # <
         case '>':
@@ -466,11 +558,13 @@ def next_lex():
                     while text.ch in octal_digit:
                         next_ch()
                     if text.ch in '89':
+                        error.lexError('Ожидается восьмеричная цифра')
+                elif text.ch in digit:
+                    next_ch()
+                    while text.ch in digit:
                         next_ch()
-                        while text.ch in digit:
-                            next_ch()
-                        if text.ch not in '.eEfFdD':
-                            error.lexError('Ожидается \'.\', экспонента или суффикс типа')
+                        # if text.ch not in '.eEfFdD':
+                        #     error.lexError('Ожидается \'.\', экспонента или суффикс типа') #после хекс не мб точки
             while text.ch in digit:
                 next_ch()
             if text.ch == '.':
@@ -480,34 +574,53 @@ def next_lex():
                 if text.ch in exponent_part:
                     next_ch()
                     signed_int()
-                if text.ch in float_suffix:
-                    if text.ch in 'fF':
+                if text.ch in float_or_double_suffix:
+                    if text.ch in float_suffix:
                         next_ch()
-                        return Lex.FLOATLIT
-                    else:
+                        return Lex.FLOAT_LIT
+                    elif text.ch in long_suffix:
                         next_ch()
-                return Lex.FLOATLIT
+                        return Lex.LONG_DOUBLE_LIT
+                else:
+                    return Lex.DOUBLE_LIT
             elif text.ch in exponent_part:
                 next_ch()
                 signed_int()
-                if text.ch in float_suffix:
-                    if text.ch in 'fF':
+                if text.ch in float_or_double_suffix:
+                    if text.ch in float_suffix:
                         next_ch()
-                        return Lex.FLOATLIT
-                    else:
+                        return Lex.FLOAT_LIT
+                    elif text.ch in long_suffix:
                         next_ch()
-                return Lex.FLOATLIT
-            elif text.ch in float_suffix:
-                if text.ch in 'fF':
-                    next_ch()
-                    return Lex.FLOATLIT
+                        return Lex.LONG_DOUBLE_LIT
                 else:
-                    next_ch()
-                return Lex.FLOATLIT
+                    return Lex.DOUBLE_LIT
+            # elif text.ch in float_suffix: #должна быть еЕ после целого числа, чтобы можго было записать f
+            #     if text.ch in 'fF':
+            #         next_ch()
+            #         return Lex.FLOATLIT
+            #     else:
+            #         next_ch()
+            #     return Lex.FLOATLIT
             else:
                 if text.ch in integer_suffix:
-                    next_ch()
-                return Lex.INTEGERLIT
+                    if text.ch in unsigned_suffix:
+                        next_ch()
+                        if text.ch in long_suffix:
+                            next_ch()
+                            return Lex.INTEGER_LIT
+                        else:
+                            return Lex.INTEGER_LIT
+                    elif text.ch in long_suffix:
+                        next_ch()
+                        if text.ch in unsigned_suffix:
+                            next_ch()
+                            return Lex.INTEGER_LIT
+                        else:
+                            return Lex.INTEGER_LIT
+                next_ch()
+                return Lex.INTEGER_LIT
+
         case '"':  # STRING
             next_ch()
             while True:
@@ -518,19 +631,28 @@ def next_lex():
                     escape_sequence()
                 elif text.ch == text.chEOT:
                     error.lexError('Не закончена строка')
+                elif text.ch == text.chEOL:
+                    error.lexError('Не закончена строка')
+                elif text.ch == '"':
+                    error.lexError('Внутри строки не должен встречаться символ символ \' " \'')
                 else:
                     next_ch()
         case "'":  # CHARACTER
             next_ch()
-            if text.ch == '\\':
-                escape_sequence()
-            else:
-                next_ch()
-            if text.ch == "'":
-                next_ch()
-                return Lex.CHARACTER
-            else:
-                error.lexError('В \'\' кавычках должен быть ЕДИНСТВЕННЫЙ символ')
+            while True:
+                if text.ch == "'":
+                    next_ch()
+                    return Lex.CHARACTER
+                elif text.ch == '\\':
+                    escape_sequence()
+                elif text.ch == text.chEOT:
+                    error.lexError('Неправильно написан character-literal')
+                elif text.ch == text.chEOL:
+                    error.lexError('Неправильно написан character-literal')
+                elif text.ch == "'":
+                    error.lexError('Внутри character-literal не должен встречаться символ " \' "')
+                else:
+                    next_ch()
 
         case text.chEOT:
             return Lex.EOT
