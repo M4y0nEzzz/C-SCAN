@@ -216,6 +216,8 @@ def escape_sequence():
             else:
                 error.lexError('UCN дописан не до конца')
         # print('UCN =', universal_character_name)
+    elif text.ch == text.chEOL:
+        next_ch()
     else:
         error.lexError('Недопустимый символ после \\')
 
@@ -392,6 +394,15 @@ def next_lex():
                     error.lexError('Ошибка в написании триграфа')
             else:
                 error.lexError('Ошибка в написании триграфа')
+
+        # # Перевод (разрыв) строки
+        # case '\\':
+        #     next_ch()
+        #     if text.ch == text.chEOL:
+        #         next_ch()
+
+
+
         case '+':
             next_ch()
             if text.ch == '=':
@@ -640,9 +651,9 @@ def next_lex():
                 elif text.ch == '\\':
                     escape_sequence()
                 elif text.ch == text.chEOT:
-                    error.lexError('Неправильно написан character-literal')
+                    error.lexError('Не закончен character-literal')
                 elif text.ch == text.chEOL:
-                    error.lexError('Неправильно написан character-literal')
+                    error.lexError('Не закончен character-literal')
                 elif text.ch == "'":
                     error.lexError('Внутри character-literal не должен встречаться символ " \' "')
                 else:
