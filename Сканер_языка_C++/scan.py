@@ -124,7 +124,10 @@ def unicode_character_name():
                 next_ch()
             else:
                 error.lexError('UCN дописан не до конца')
-        return chr(int(unicode, 16))
+        if int(unicode, 16) in range(55296, 57344): #0xD000 - 0xDFFF
+            error.lexError('Недопустимое значение UCN')
+        else:
+            return chr(int(unicode, 16))
     elif text.ch == 'U':
         next_ch()
         unicode = ''
@@ -134,7 +137,10 @@ def unicode_character_name():
                 next_ch()
             else:
                 error.lexError('UCN дописан не до конца')
-        return chr(int(unicode, 16))
+        if int(unicode, 16) in range(55296, 57344): #0xD000 - 0xDFFF
+            error.lexError('Недопустимое значение UCN')
+        else:
+            return chr(int(unicode, 16))
     else:
         error.lexError('Ожидается u или U после \'\\\' (universal-character-name)')
 
@@ -200,22 +206,30 @@ def escape_sequence():
         hexadecimal_escape_sequence()
     elif text.ch == 'u':
         next_ch()
-        for _ in range(3):
+        universal_character_name = ''
+        for _ in range(4):
             if text.ch in hexadecimal_digit:
                 universal_character_name += text.ch
                 next_ch()
             else:
                 error.lexError('UCN дописан не до конца')
-        # print('UCN =', universal_character_name)
+        if int(universal_character_name, 16) in range(55296, 57344):
+            error.lexError('Недопустимое значение UCN')
+        else:
+            return chr(int(universal_character_name, 16))
     elif text.ch == 'U':
         next_ch()
-        for _ in range(7):
+        unicode = ''
+        for _ in range(8):
             if text.ch in hexadecimal_digit:
-                universal_character_name += text.ch
+                unicode += text.ch
                 next_ch()
             else:
                 error.lexError('UCN дописан не до конца')
-        # print('UCN =', universal_character_name)
+        if int(unicode, 16) in range(55296, 57344):
+            error.lexError('Недопустимое значение UCN')
+        else:
+            return chr(int(unicode, 16))
     elif text.ch == text.chEOL:
         next_ch()
     else:
@@ -241,8 +255,8 @@ def next_lex():
                         escape_sequence()
                     elif text.ch == text.chEOT:
                         error.lexError('Неправильно написан character-literal')
-                    elif text.ch == text.chEOL:
-                        error.lexError('Неправильно написан character-literal')
+                    # elif text.ch == text.chEOL:
+                    #     error.lexError('Неправильно написан character-literal')
                     elif text.ch == "'":
                         error.lexError('Внутри character-literal не должен встречаться символ одинарной кавычки')
                     else:
@@ -257,8 +271,8 @@ def next_lex():
                         escape_sequence()
                     elif text.ch == text.chEOT:
                         error.lexError('Не закончена строка')
-                    elif text.ch == text.chEOL:
-                        error.lexError('Не закончена строка')
+                    # elif text.ch == text.chEOL:
+                    #     error.lexError('Не закончена строка')
                     elif text.ch == '"':
                         error.lexError('Внутри строки не должен встречаться символ двойной кавычки')
                     else:
@@ -631,17 +645,21 @@ def next_lex():
             while True:
                 if text.ch == '"':
                     next_ch()
-                    return Lex.STRING
+                    while text.ch in {text.chEOL, text.chSPACE}:
+                        next_ch()
+                    if text.ch == '"':
+                        return next_lex()
+                    else:
+                        return Lex.STRING
                 elif text.ch == '\\':
                     escape_sequence()
                 elif text.ch == text.chEOT:
-                    error.lexError('Не закончена строка')
-                elif text.ch == text.chEOL:
                     error.lexError('Не закончена строка')
                 elif text.ch == '"':
                     error.lexError('Внутри строки не должен встречаться символ символ \' " \'')
                 else:
                     next_ch()
+
         case "'":  # CHARACTER
             next_ch()
             while True:
@@ -652,8 +670,8 @@ def next_lex():
                     escape_sequence()
                 elif text.ch == text.chEOT:
                     error.lexError('Не закончен character-literal')
-                elif text.ch == text.chEOL:
-                    error.lexError('Не закончен character-literal')
+                # elif text.ch == text.chEOL:
+                #     error.lexError('Не закончен character-literal')
                 elif text.ch == "'":
                     error.lexError('Внутри character-literal не должен встречаться символ " \' "')
                 else:
